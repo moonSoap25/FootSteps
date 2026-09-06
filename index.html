@@ -9,7 +9,7 @@
 </head>
 <body>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Libre+Franklin:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Jomhuria&family=Libre+Franklin:wght@400;500;600;700&display=swap');
 
 :root{
   --ink:#23201B;
@@ -83,6 +83,8 @@
 .nav-inner{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:22px;padding:13px 24px;}
 .brand{color:var(--white);font-size:19px;font-weight:600;white-space:nowrap;}
 .brand span{color:var(--gold);}
+#app .brand, #app .brand-mark{font-family:'Jomhuria',cursive;font-weight:400;}
+#app .brand{font-size:42px;line-height:.8;}
 .nav-search{position:relative;flex:1;max-width:360px;}
 .nav-search input{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);color:var(--white);}
 .nav-search input::placeholder{color:rgba(255,255,255,.65);}
@@ -401,7 +403,7 @@ function signupHTML(){
       </div>
       <div class="field">
         <label>Bio</label>
-        <textarea name="bio" placeholder="What should the community know? Your school, job, experience, what you care about…"></textarea>
+        <textarea name="bio" placeholder="What should the community know? Your experience, what you care about, what you can specifically provide to others, and what you're seeking for yourself…"></textarea>
       </div>
 
       <div class="section-title">Services you're willing to provide</div>
