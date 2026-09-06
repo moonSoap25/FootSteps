@@ -153,8 +153,20 @@
 .sidebar-card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius-card);padding:18px;margin-bottom:16px;}
 .sidebar-card h3{font-size:14px;margin:0 0 12px;}
 .stat-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:7px 0;border-bottom:1px solid var(--sand-dark);}
-.stat-row:last-child{border-bottom:none;}
+.stat-row-wrap:last-child .stat-row{border-bottom:none;}
 .stat-row .count{font-weight:700;color:var(--gold);}
+.stat-row.clickable{cursor:pointer;}
+.stat-row.clickable:hover{opacity:.75;}
+.stat-row .chevron{display:inline-block;transition:transform .15s ease;color:#a29a86;}
+.stat-row.clickable.open .chevron{transform:rotate(90deg);}
+.stat-expand{max-height:220px;overflow-y:auto;padding-right:2px;}
+.needs-person-row{display:flex;align-items:center;gap:8px;padding:8px 2px;border-bottom:1px solid var(--sand-dark);}
+.needs-person-row:last-child{border-bottom:none;}
+.mini-avatar{width:28px;height:28px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  color:var(--white);font-size:11px;font-weight:700;}
+.needs-person-info{flex:1;min-width:0;}
+.needs-person-name{font-size:12.5px;font-weight:600;}
+.needs-person-field{font-size:11px;color:#a29a86;}
 
 .empty-state{border:1px dashed var(--line);border-radius:var(--radius-card);padding:30px;text-align:center;color:#8a8370;font-size:13.5px;}
 
@@ -578,6 +590,7 @@ async function renderHome(){
   const body = document.getElementById('pageBody');
   const all = await getAllProfiles();
   const others = all.filter(p=>p.id!==currentProfile.id && (p.servicesOffered||[]).length>0);
+  const myConns = await getMyConns();
 
   const fieldTally = {};
   all.filter(p=>p.field===currentProfile.field).forEach(p=>{
@@ -613,7 +626,7 @@ async function renderHome(){
       <div>
         <div class="sidebar-card">
           <h3>Most requested service<br/>from your field</h3>
-          ${topNeeds.length ? topNeeds.map(([s,c])=>`<div class="stat-row"><span>${esc(s)}</span><span class="count">${c}</span></div>`).join('')
+          ${topNeeds.length ? topNeeds.map(([s,c],i)=>needsRowHTML(s,c,i)).join('')
             : `<p class="muted">No data yet — invite more people to join!</p>`}
         </div>
       </div>
@@ -628,6 +641,73 @@ async function renderHome(){
     });
   });
   wireFeedButtons();
+  wireNeedsSidebar(all, myConns);
+}
+// Each row in the "most requested service" sidebar expands in place — click
+// again to collapse. The list of people is pulled from the same `all`
+// profiles array already fetched for the page, so opening it costs no extra
+// network round-trip.
+function needsRowHTML(service, count, idx){
+  return `
+  <div class="stat-row-wrap">
+    <div class="stat-row clickable" data-service="${esc(service)}" data-idx="${idx}">
+      <span>${esc(service)}</span>
+      <span class="chevron">›</span>
+    </div>
+    <div class="stat-expand" id="statExpand${idx}" style="display:none;"></div>
+  </div>`;
+}
+function wireNeedsSidebar(all, myConns){
+  document.querySelectorAll('.stat-row.clickable').forEach(row=>{
+    row.addEventListener('click', ()=>{
+      const idx = row.dataset.idx;
+      const service = row.dataset.service;
+      const panel = document.getElementById('statExpand'+idx);
+      const isOpen = panel.style.display !== 'none';
+      if(isOpen){
+        panel.style.display = 'none';
+        panel.innerHTML = '';
+        row.classList.remove('open');
+        return;
+      }
+      const matches = all.filter(p => p.id!==currentProfile.id && (p.servicesNeeded||[]).includes(service));
+      panel.innerHTML = matches.length
+        ? matches.map(p=>needsPersonRowHTML(p, service, myConns)).join('')
+        : `<div class="muted" style="padding:8px 2px;">No one currently needs this.</div>`;
+      panel.style.display = 'block';
+      row.classList.add('open');
+      wireNeedsConnectButtons(panel);
+    });
+  });
+}
+function needsPersonRowHTML(p, service, myConns){
+  const existing = findConn(myConns, p.id, service);
+  const statusLabel = existing ? (existing.status==='accepted' ? 'Connected' : existing.status==='pending' ? 'Requested' : 'Declined') : '';
+  return `
+  <div class="needs-person-row" data-other="${p.id}" data-service="${esc(service)}">
+    <div class="mini-avatar" style="background:${colorFor(p.name)}">${esc(initials(p.name))}</div>
+    <div class="needs-person-info">
+      <div class="needs-person-name"><a href="#/profile/${p.id}">${esc(p.name)}</a></div>
+      <div class="needs-person-field">${esc(p.field||'')}</div>
+    </div>
+    ${existing
+      ? `<span class="chip status-${existing.status}">${statusLabel}</span>`
+      : `<button class="btn btn-small btn-primary needs-connect-btn">Connect</button>`}
+  </div>`;
+}
+function wireNeedsConnectButtons(panel){
+  panel.querySelectorAll('.needs-connect-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const row = btn.closest('.needs-person-row');
+      const otherId = row.dataset.other;
+      const service = row.dataset.service;
+      btn.disabled = true; btn.textContent = 'Sending…';
+      const otherProfile = await sGet('profile:'+otherId);
+      await sendConnectionRequest({mentorId: currentProfile.id, mentorName: currentProfile.name,
+        menteeId: otherId, menteeName: otherProfile.name, service, requesterId: currentProfile.id});
+      btn.textContent = 'Sent ✓';
+    });
+  });
 }
 function feedHTML(others){
   if(others.length===0) return `<div class="empty-state">No mentors have joined yet in your community. Check back soon, or invite someone!</div>`;
