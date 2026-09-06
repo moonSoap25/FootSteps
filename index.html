@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html>
+<head>
+<!-- This is a single-page app: keep #/home, #/mentors, and other hash links
+     inside the Apps Script iframe. `_top` sends those links to Google's outer
+     userCodeAppPanel page and loses the in-memory signed-in profile. -->
+<base target="_self">
+<meta charset="UTF-8">
+</head>
+<body>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Libre+Franklin:wght@400;500;600;700&display=swap');
+
+:root{
+  --ink:#23201B;
+  --paper:#FBF7EF;
+  --teal:#8CD3E4;
+  --teal-dark:#258EA9;
+  --gold:#B8863B;
+  --rose:#A63D40;
+  --sand:#F1EADA;
+  --sand-dark:#E4D8BE;
+  --line:#DDD3BE;
+  --white:#FFFDF9;
+  --radius-card: 14px;
+  --radius-pill: 999px;
+}
+*{box-sizing:border-box;}
+#app, #app *{font-family:'Libre Franklin',sans-serif;color:var(--ink);}
+#app h1, #app h2, #app h3, #app .brand{font-family:'Fraunces',serif;}
+#app{background:var(--paper);min-height:600px;padding-bottom:60px;}
+#app a{text-decoration:none;}
+#app button{cursor:pointer;font-family:inherit;}
+#app input, #app select, #app textarea{
+  font-family:inherit;font-size:14.5px;padding:10px 12px;border:1px solid var(--line);
+  border-radius:8px;background:var(--white);width:100%;color:var(--ink);
+}
+#app input:focus, #app select:focus, #app textarea:focus{outline:2px solid var(--teal);outline-offset:1px;}
+#app textarea{resize:vertical;min-height:90px;line-height:1.5;}
+#app label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--teal-dark);}
+.field{margin-bottom:16px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:640px){.field-row{grid-template-columns:1fr;}}
+
+.btn{border:none;border-radius:var(--radius-pill);padding:10px 20px;font-weight:600;font-size:14px;transition:transform .12s ease, box-shadow .12s ease;}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:var(--teal);color:var(--white);}
+.btn-primary:hover{background:var(--teal-dark);}
+.btn-secondary{background:transparent;color:var(--teal);border:1.5px solid var(--teal);}
+.btn-secondary:hover{background:var(--sand);}
+.btn-gold{background:var(--gold);color:var(--white);}
+.btn-small{padding:6px 14px;font-size:12.5px;}
+.btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line);}
+.btn:disabled{opacity:.55;cursor:default;}
+
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--sand);border:1px solid var(--sand-dark);
+  border-radius:var(--radius-pill);padding:5px 12px;font-size:12.5px;font-weight:500;margin:3px 4px 3px 0;}
+.chip.tag-teal{background:rgba(140,211,228,.22);border-color:rgba(140,211,228,.6);color:var(--teal-dark);}
+.chip.tag-rose{background:rgba(166,61,64,.09);border-color:rgba(166,61,64,.25);color:var(--rose);}
+.chip.status-accepted{background:rgba(140,211,228,.28);color:var(--teal-dark);}
+.chip.status-pending{background:rgba(184,134,59,.14);color:var(--gold);}
+.chip.status-declined{background:rgba(0,0,0,.06);color:#8a8a8a;}
+
+.card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius-card);padding:20px;}
+
+/* ---------- Signup ---------- */
+.auth-shell{max-width:640px;margin:0 auto;padding:56px 24px 40px;}
+.auth-shell .brand-mark{font-size:15px;letter-spacing:.02em;color:var(--teal-dark);font-weight:600;margin-bottom:6px;}
+.auth-shell h1{font-size:34px;font-weight:600;margin:0 0 8px;color:var(--teal-dark);}
+.auth-shell p.lede{font-size:15.5px;color:#5b5548;margin:0 0 28px;line-height:1.55;}
+.checkbox-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+@media(max-width:640px){.checkbox-grid{grid-template-columns:1fr;}}
+.check-item{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:var(--white);font-size:13.5px;}
+.check-item input{width:auto;padding:0;accent-color:var(--teal);}
+.section-title{font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gold);margin:26px 0 10px;}
+.error-msg{color:var(--rose);font-size:13px;margin-top:10px;}
+.thankyou{text-align:center;padding:70px 20px;}
+.thankyou .mark{width:56px;height:56px;border-radius:50%;background:var(--teal);color:var(--white);display:flex;
+  align-items:center;justify-content:center;font-size:26px;margin:0 auto 22px;}
+
+/* ---------- Nav ---------- */
+.nav{background:var(--teal);position:sticky;top:0;z-index:30;}
+.nav-inner{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:22px;padding:13px 24px;}
+.brand{color:var(--white);font-size:19px;font-weight:600;white-space:nowrap;}
+.brand span{color:var(--gold);}
+.nav-search{position:relative;flex:1;max-width:360px;}
+.nav-search input{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);color:var(--white);}
+.nav-search input::placeholder{color:rgba(255,255,255,.65);}
+.search-results{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--white);border:1px solid var(--line);
+  border-radius:10px;overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,.14);max-height:320px;overflow-y:auto;}
+.search-results a{display:block;padding:10px 14px;font-size:13.5px;border-bottom:1px solid var(--line);}
+.search-results a:last-child{border-bottom:none;}
+.search-results a:hover{background:var(--sand);}
+.nav-links{display:flex;gap:6px;flex-shrink:0;}
+.nav-links a{color:#FFFFFF;font-size:14px;font-weight:500;padding:8px 12px;border-radius:var(--radius-pill);position:relative;}
+.nav-links a.active, .nav-links a:hover{background:#FFFFFF;color:#258EA9;}
+.nav-links .badge{background:var(--rose);color:var(--white);font-size:10px;font-weight:700;padding:1px 6px;
+  border-radius:10px;margin-left:5px;}
+.nav-avatar{width:34px;height:34px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  font-weight:700;color:var(--white);font-size:13px;border:2px solid rgba(255,255,255,.4);}
+@media(max-width:760px){
+  .nav-inner{padding:12px 16px;gap:12px;flex-wrap:wrap;}
+  .nav-search{order:3;flex-basis:100%;max-width:none;}
+  .nav-links{gap:2px;overflow-x:auto;max-width:calc(100% - 130px);}
+  .nav-links a{font-size:12.5px;padding:7px 9px;white-space:nowrap;}
+  .page{padding:22px 16px 48px;}
+}
+
+.page{max-width:1180px;margin:0 auto;padding:28px 24px 60px;}
+.page-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:10px;}
+.page-header h1{font-size:26px;font-weight:600;color:var(--teal-dark);margin:0;}
+.muted{color:#7a7365;font-size:13.5px;}
+
+/* ---------- Home layout ---------- */
+.home-grid{display:grid;grid-template-columns:230px 1fr 260px;gap:22px;align-items:start;}
+@media(max-width:980px){.home-grid{grid-template-columns:1fr;}}
+.avatar-square{width:100%;aspect-ratio:1;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:34px;font-weight:700;color:var(--white);margin-bottom:14px;}
+.mini-profile h3{font-size:16.5px;margin:0 0 4px;}
+.mini-profile p{font-size:13px;color:#5b5548;line-height:1.5;margin:0 0 12px;}
+
+.toggle-row{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;}
+.toggle-btn{background:var(--white);border:1px solid var(--line);border-radius:var(--radius-pill);padding:8px 16px;
+  font-size:13px;font-weight:600;color:#5b5548;}
+.toggle-btn.active{background:var(--teal);color:var(--white);border-color:var(--teal);}
+
+.group-block{margin-bottom:26px;}
+.group-title{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--teal-dark);
+  border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:14px;}
+.mentor-card{display:flex;gap:14px;padding:16px;border:1px solid var(--line);border-radius:var(--radius-card);
+  background:var(--white);margin-bottom:12px;}
+.mentor-avatar{width:52px;height:52px;flex-shrink:0;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-weight:700;color:var(--white);font-size:18px;}
+.mentor-card .body{flex:1;min-width:0;}
+.mentor-card h4{margin:0 0 3px;font-size:15.5px;}
+.mentor-card h4 a{color:var(--ink);}
+.mentor-card .meta{font-size:12px;color:#8a8370;margin-bottom:8px;}
+.mentor-card .bio{font-size:13px;color:#5b5548;line-height:1.5;margin-bottom:10px;}
+.service-actions{display:flex;flex-wrap:wrap;gap:8px;}
+.service-actions .unit{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:var(--radius-pill);
+  padding:4px 6px 4px 12px;font-size:12px;background:var(--sand);}
+
+.sidebar-card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius-card);padding:18px;margin-bottom:16px;}
+.sidebar-card h3{font-size:14px;margin:0 0 12px;}
+.stat-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:7px 0;border-bottom:1px solid var(--sand-dark);}
+.stat-row:last-child{border-bottom:none;}
+.stat-row .count{font-weight:700;color:var(--gold);}
+
+.empty-state{border:1px dashed var(--line);border-radius:var(--radius-card);padding:30px;text-align:center;color:#8a8370;font-size:13.5px;}
+
+/* ---------- Notifications ---------- */
+.notif-item{display:flex;gap:14px;padding:16px;border:1px solid var(--line);border-radius:var(--radius-card);
+  background:var(--white);margin-bottom:10px;align-items:flex-start;}
+.notif-item .dot{width:9px;height:9px;border-radius:50%;background:var(--rose);margin-top:6px;flex-shrink:0;}
+.notif-item.read .dot{background:var(--line);}
+.notif-item .content{flex:1;}
+.notif-item .time{font-size:11.5px;color:#a29a86;margin-top:4px;}
+.notif-actions{display:flex;gap:8px;margin-top:10px;}
+
+/* ---------- Profile page ---------- */
+.profile-header{display:flex;gap:20px;align-items:center;margin-bottom:22px;flex-wrap:wrap;}
+.profile-avatar-lg{width:88px;height:88px;border-radius:16px;display:flex;align-items:center;justify-content:center;
+  font-size:32px;font-weight:700;color:var(--white);flex-shrink:0;}
+.profile-header h1{font-size:25px;margin:0 0 4px;}
+.contact-locked{font-size:13px;color:#8a8370;font-style:italic;}
+.section-block{margin-bottom:24px;}
+.section-block h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--gold);margin:0 0 10px;font-weight:700;}
+</style>
+
+<div id="app"><div class="page"><p class="muted">Loading Footsteps…</p></div></div>
+
+<script>
+(function(){
+
+const SERVICE_CATEGORIES = [
+  "Academic Tutoring","Test Prep (SAT/ACT)","College Admissions Guidance","Career Mentorship",
+  "Internship & Job Placement","Resume & Interview Help","Special Education Support","Religious Guidance",
+  "Life Skills & General Advice","Financial Literacy","Coding & Tech Skills","Language Learning",
+  "Arts, Music & Creative Skills","Sports & Fitness Coaching"
+];
+const FIELDS = [
+  "Islamic Studies / Chaplaincy","Medicine & Health Sciences","Engineering & Technology","Business & Finance","Law",
+  "Education","Psychology & Counseling","Arts & Design","Sciences","Trades & Vocational Skills",
+  "K–12 Student","Undergraduate Student","Graduate Student","Other"
+];
+const PALETTE = ["#258EA9","#8CD3E4","#5DB8CF","#7AC9DB","#4EA2B9","#99DBE9"];
+
+let currentProfile = null;
+
+// ---------- storage helpers (Google Apps Script backend via google.script.run) ----------
+function gsCall(fnName, ...args){
+  return new Promise((resolve, reject)=>{
+    google.script.run
+      .withSuccessHandler(resolve)
+      .withFailureHandler(reject)
+      [fnName](...args);
+  });
+}
+// Generic key-based shim so the rest of the app's logic (unchanged from the
+// original) can keep calling sGet/sSet with 'profile:id' / 'conn:id' / 'notif:id'
+// keys, dispatching to the matching Code.gs function under the hood.
+async function sGet(key){
+  if(key === 'my-profile-id') return null; // identity is handled by the email gate instead
+  const i = key.indexOf(':'); const type = key.slice(0,i), id = key.slice(i+1);
+  if(type === 'profile') return await gsCall('getProfile', id);
+  if(type === 'conn') return await gsCall('getConns', id);
+  if(type === 'notif') return await gsCall('getNotifs', id);
+  return null;
+}
+async function sSet(key, value){
+  if(key === 'my-profile-id') return true; // no-op, see above
+  const i = key.indexOf(':'); const type = key.slice(0,i), id = key.slice(i+1);
+  if(type === 'profile') return await gsCall('saveProfile', value);
+  if(type === 'conn') return await gsCall('saveConns', id, value);
+  if(type === 'notif') return await gsCall('saveNotifs', id, value);
+  return null;
+}
+async function getAllProfiles(){
+  return await gsCall('getAllProfiles');
+}
+async function getMyConns(){ return (await sGet('conn:'+currentProfile.id, true)) || []; }
+async function getConnsFor(id){ return (await sGet('conn:'+id, true)) || []; }
+async function getMyNotifs(){ return (await sGet('notif:'+currentProfile.id, true)) || []; }
+
+function colorFor(str){
+  let h=0; for(let i=0;i<str.length;i++) h = str.charCodeAt(i) + ((h<<5)-h);
+  return PALETTE[Math.abs(h) % PALETTE.length];
+}
+function initials(name){
+  return (name||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]?.toUpperCase()||'').join('') || '?';
+}
+function esc(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function timeAgo(ts){
+  const s = Math.floor((Date.now()-ts)/1000);
+  if(s<60) return 'just now';
+  if(s<3600) return Math.floor(s/60)+'m ago';
+  if(s<86400) return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
+}
+function avatarHTML(profile, size){
+  const cls = size==='lg' ? 'profile-avatar-lg' : (size==='sq' ? 'avatar-square' : 'mentor-avatar');
+  return `<div class="${cls}" style="background:${colorFor(profile.name||profile.id)}">${esc(initials(profile.name))}</div>`;
+}
+
+// ---------- connection helpers ----------
+function findConn(conns, otherId, service){
+  return conns.find(c => c.otherId===otherId && c.service===service);
+}
+async function sendConnectionRequest({mentorId, mentorName, menteeId, menteeName, service, requesterId}){
+  const connId = 'c_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  const now = Date.now();
+  const mentorConn = {id:connId, otherId:menteeId, otherName:menteeName, service, iAmMentor:true, status:'pending',
+    direction: requesterId===mentorId?'sent':'received', createdAt:now};
+  const menteeConn = {id:connId, otherId:mentorId, otherName:mentorName, service, iAmMentor:false, status:'pending',
+    direction: requesterId===menteeId?'sent':'received', createdAt:now};
+  const mentorConns = await getConnsFor(mentorId);
+  const menteeConns = await getConnsFor(menteeId);
+  mentorConns.push(mentorConn);
+  menteeConns.push(menteeConn);
+  await sSet('conn:'+mentorId, mentorConns, true);
+  await sSet('conn:'+menteeId, menteeConns, true);
+  const receiverId = requesterId===mentorId ? menteeId : mentorId;
+  const requesterName = requesterId===mentorId ? mentorName : menteeName;
+  const notifs = (await sGet('notif:'+receiverId, true)) || [];
+  notifs.unshift({id:'n_'+now, type:'request', connId, service, read:false, createdAt:now,
+    text: `${requesterName} would like to connect with you for "${service}".`});
+  await sSet('notif:'+receiverId, notifs, true);
+}
+async function respondToConnection(connId, accept){
+  const myConns = await getMyConns();
+  const mine = myConns.find(c=>c.id===connId);
+  if(!mine) return;
+  const otherConns = await getConnsFor(mine.otherId);
+  const theirs = otherConns.find(c=>c.id===connId);
+  mine.status = accept ? 'accepted' : 'declined';
+  if(theirs) theirs.status = accept ? 'accepted' : 'declined';
+  await sSet('conn:'+currentProfile.id, myConns, true);
+  await sSet('conn:'+mine.otherId, otherConns, true);
+
+  const myNotifs = await getMyNotifs();
+  const n = myNotifs.find(n=>n.connId===connId);
+  if(n) n.read = true;
+  await sSet('notif:'+currentProfile.id, myNotifs, true);
+
+  if(accept){
+    const otherNotifs = (await sGet('notif:'+mine.otherId, true)) || [];
+    otherNotifs.unshift({id:'n_'+Date.now(), type:'accepted', connId, read:false, createdAt:Date.now(),
+      text: `${currentProfile.name} accepted your request for "${mine.service}". You can now see each other's contact info on your profiles.`});
+    await sSet('notif:'+mine.otherId, otherNotifs, true);
+  }
+}
+function matchedServices(needsList, offersList){
+  return (offersList||[]).filter(s => (needsList||[]).includes(s));
+}
+
+// ---------- router ----------
+function getHash(){
+  const h = location.hash.replace(/^#\/?/, '');
+  return h || '';
+}
+window.addEventListener('hashchange', ()=>{ if(currentProfile) render(); });
+window.addEventListener('load', init);
+
+// Apps Script has no built-in "which browser session is this" hook that works
+// reliably across account types, so identity here is a simple email lookup:
+// enter your email, we check for a matching profile, and if none exists you're
+// sent to sign up. There's no persistence across a page refresh — you'll need
+// to re-enter your email each time you reload, which is fine for tinkering but
+// worth hardening (e.g. a query-string token) before a real deployment.
+let prefillEmail = '';
+async function init(){
+  document.getElementById('app').innerHTML = gateHTML();
+  document.getElementById('gateContinue').addEventListener('click', onGateContinue);
+  document.getElementById('gateEmail').addEventListener('keydown', (e)=>{ if(e.key==='Enter') onGateContinue(); });
+}
+function gateHTML(){
+  return `
+  <div class="auth-shell">
+    <div class="brand-mark">Footsteps</div>
+    <h1>Welcome — let's find your profile.</h1>
+    <p class="lede">Enter your email. If you've signed up before we'll load your profile; if not, we'll take you to create one.</p>
+    <div class="field"><label>Email</label><input id="gateEmail" type="email" placeholder="you@example.com" /></div>
+    <button id="gateContinue" class="btn btn-primary">Continue</button>
+  </div>`;
+}
+async function onGateContinue(){
+  const email = document.getElementById('gateEmail').value.trim();
+  if(!email) return;
+  const btn = document.getElementById('gateContinue');
+  btn.disabled = true; btn.textContent = 'Checking…';
+  try {
+    const found = await gsCall('findProfileByEmail', email);
+    const destination = found ? 'home' : 'signup';
+    const wasAlreadyThere = getHash() === destination;
+    if(found){
+      currentProfile = found;
+    } else {
+      prefillEmail = email;
+      currentProfile = null;
+    }
+    location.hash = '#/' + destination;
+    // If the route is already selected, changing the hash will not emit a
+    // hashchange event; render in that one case only.
+    if(wasAlreadyThere) await render();
+  } catch (error) {
+    btn.disabled = false;
+    btn.textContent = 'Continue';
+    const message = error && error.message ? error.message : 'Unable to load profiles. Please try again.';
+    document.querySelector('.auth-shell').insertAdjacentHTML('beforeend', `<p class="error-msg">${esc(message)}</p>`);
+  }
+}
+
+async function render(){
+  const app = document.getElementById('app');
+  let hash = getHash();
+  if(!currentProfile && hash !== 'signup'){ init(); return; }
+  if(currentProfile && hash === 'signup'){ location.hash = '#/home'; render(); return; }
+  const parts = hash.split('/');
+  const route = parts[0] || 'signup';
+  const param = parts[1];
+
+  if(route === 'signup'){ app.innerHTML = signupHTML(); wireSignup(); return; }
+
+  // all other routes share the nav shell
+  app.innerHTML = shellHTML(route) + `<div id="pageBody" class="page"><p class="muted">Loading…</p></div>`;
+  await wireNav(route);
+
+  if(route === 'home') await renderHome();
+  else if(route === 'mentors') await renderMentors();
+  else if(route === 'mentees') await renderMentees();
+  else if(route === 'notifications') await renderNotifications();
+  else if(route === 'profile') await renderProfile(param);
+  else document.getElementById('pageBody').innerHTML = `<div class="empty-state">Page not found.</div>`;
+}
+
+// ================= SIGNUP =================
+function serviceChecks(name){
+  return SERVICE_CATEGORIES.map(s=>`
+    <label class="check-item"><input type="checkbox" name="${name}" value="${esc(s)}"> ${esc(s)}</label>
+  `).join('');
+}
+function signupHTML(){
+  const fieldOpts = FIELDS.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('');
+  return `
+  <div class="auth-shell">
+    <div class="brand-mark">Footsteps</div>
+    <h1>Find someone who's been where you're headed.</h1>
+    <p class="lede">Create a profile so we can match you with people in your community — as a mentor sharing what you know, a mentee looking for guidance, or both.</p>
+    <form id="signupForm">
+      <div class="field-row">
+        <div class="field"><label>Full name</label><input required name="name" /></div>
+        <div class="field"><label>Age</label><input required name="age" type="number" min="10" max="100" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Email</label><input required name="email" type="email" value="${esc(prefillEmail)}" /></div>
+        <div class="field"><label>Phone number</label><input required name="phone" type="tel" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Field of study / expertise</label><select required name="field"><option value="">Select one…</option>${fieldOpts}</select></div>
+        <div class="field"><label>Locality (city, state)</label><input required name="locality" placeholder="e.g. Hackensack, NJ" /></div>
+      </div>
+      <div class="field">
+        <label>Bio</label>
+        <textarea name="bio" placeholder="What should the community know? Your school, job, experience, what you care about…"></textarea>
+      </div>
+
+      <div class="section-title">Services you're willing to provide</div>
+      <div class="checkbox-grid">${serviceChecks('offered')}</div>
+
+      <div class="section-title">Services you're in need of</div>
+      <div class="checkbox-grid">${serviceChecks('needed')}</div>
+      <p class="muted" style="margin-top:10px;">Fill out at least one of the two sections above.</p>
+
+      <div id="signupError" class="error-msg" style="display:none;"></div>
+      <div style="margin-top:26px;">
+        <button type="submit" class="btn btn-primary">Create my profile</button>
+      </div>
+    </form>
+  </div>`;
+}
+function wireSignup(){
+  const form = document.getElementById('signupForm');
+  form.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const fd = new FormData(form);
+    const offered = fd.getAll('offered');
+    const needed = fd.getAll('needed');
+    const errEl = document.getElementById('signupError');
+    if(offered.length===0 && needed.length===0){
+      errEl.textContent = 'Please select at least one service you can offer or one you need.';
+      errEl.style.display='block';
+      return;
+    }
+    const id = 'p_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+    const profile = {
+      id, name: fd.get('name').trim(), age: fd.get('age'), email: fd.get('email').trim(),
+      phone: fd.get('phone').trim(), field: fd.get('field'), locality: fd.get('locality').trim(),
+      bio: (fd.get('bio')||'').trim(), servicesOffered: offered, servicesNeeded: needed, createdAt: Date.now()
+    };
+    await sSet('profile:'+id, profile, true);
+    await sSet('my-profile-id', id, false);
+    await sSet('conn:'+id, [], true);
+    await sSet('notif:'+id, [], true);
+    currentProfile = profile;
+    document.getElementById('app').innerHTML = thankYouHTML(profile);
+    document.getElementById('continueBtn').addEventListener('click', ()=>{ location.hash = '#/home'; });
+  });
+}
+function thankYouHTML(profile){
+  let msg = '';
+  if(profile.servicesOffered.length) msg += `<p>As soon as we find someone in need of what you offer, you'll be matched with them as a mentor.</p>`;
+  if(profile.servicesNeeded.length) msg += `<p>As soon as we find someone who can offer what you need, you'll be matched with them as a mentee.</p>`;
+  return `
+  <div class="auth-shell thankyou">
+    <div class="mark">✓</div>
+    <h1>Thank you for signing up!</h1>
+    ${msg}
+    <button id="continueBtn" class="btn btn-primary" style="margin-top:18px;">Continue to your home page</button>
+  </div>`;
+}
+
+// ================= SHELL / NAV =================
+function shellHTML(route){
+  return `
+  <header class="nav">
+    <div class="nav-inner">
+      <a href="#/home" class="brand">Footsteps</a>
+      <div class="nav-search">
+        <input id="searchInput" placeholder="Search people, services, fields…" autocomplete="off" />
+        <div id="searchResults" class="search-results" style="display:none;"></div>
+      </div>
+      <nav class="nav-links">
+        <a href="#/home" data-r="home" class="${route==='home'?'active':''}">Home</a>
+        <a href="#/mentors" data-r="mentors" class="${route==='mentors'?'active':''}">My Mentors</a>
+        <a href="#/mentees" data-r="mentees" class="${route==='mentees'?'active':''}">My Mentees</a>
+        <a href="#/notifications" data-r="notifications" class="${route==='notifications'?'active':''}">Notifications<span class="badge" id="notifBadge" style="display:none;"></span></a>
+      </nav>
+      <a href="#/profile" class="nav-avatar" id="navAvatar" style="background:${colorFor(currentProfile.name||currentProfile.id)}">${esc(initials(currentProfile.name))}</a>
+    </div>
+  </header>`;
+}
+async function wireNav(){
+  const notifs = await getMyNotifs();
+  const unread = notifs.filter(n=>!n.read).length;
+  const badge = document.getElementById('notifBadge');
+  if(unread>0){ badge.style.display='inline'; badge.textContent = unread; }
+
+  const input = document.getElementById('searchInput');
+  const results = document.getElementById('searchResults');
+  input.addEventListener('input', async ()=>{
+    const q = input.value.trim().toLowerCase();
+    if(!q){ results.style.display='none'; results.innerHTML=''; return; }
+    const all = await getAllProfiles();
+    const matches = all.filter(p => p.id!==currentProfile.id && (
+      p.name.toLowerCase().includes(q) ||
+      (p.field||'').toLowerCase().includes(q) ||
+      (p.locality||'').toLowerCase().includes(q) ||
+      (p.servicesOffered||[]).some(s=>s.toLowerCase().includes(q)) ||
+      (p.servicesNeeded||[]).some(s=>s.toLowerCase().includes(q))
+    )).slice(0,8);
+    if(matches.length===0){ results.innerHTML = `<a style="color:#8a8370;">No matches found.</a>`; }
+    else{ results.innerHTML = matches.map(p=>`<a href="#/profile/${p.id}">${esc(p.name)} — <span style="color:#8a8370;">${esc(p.field||'')}</span></a>`).join(''); }
+    results.style.display='block';
+  });
+  document.addEventListener('click', (e)=>{
+    if(!results.contains(e.target) && e.target!==input) results.style.display='none';
+  });
+}
+
+// ================= HOME =================
+let homeMode = 'service';
+async function renderHome(){
+  const body = document.getElementById('pageBody');
+  const all = await getAllProfiles();
+  const others = all.filter(p=>p.id!==currentProfile.id && (p.servicesOffered||[]).length>0);
+
+  const fieldTally = {};
+  all.filter(p=>p.field===currentProfile.field).forEach(p=>{
+    (p.servicesNeeded||[]).forEach(s=> fieldTally[s] = (fieldTally[s]||0)+1);
+  });
+  let topNeeds = Object.entries(fieldTally).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  if(topNeeds.length===0){
+    const globalTally = {};
+    all.forEach(p=>(p.servicesNeeded||[]).forEach(s=> globalTally[s]=(globalTally[s]||0)+1));
+    topNeeds = Object.entries(globalTally).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  }
+
+  body.innerHTML = `
+    <div class="home-grid">
+      <div>
+        <div class="sidebar-card">
+          ${avatarHTML(currentProfile,'sq')}
+          <div class="mini-profile">
+            <h3>${esc(currentProfile.name)}</h3>
+            <p>${esc((currentProfile.bio||'No bio added yet.').slice(0,140))}${(currentProfile.bio||'').length>140?'…':''}</p>
+            <a href="#/profile" class="btn btn-secondary btn-small">View profile</a>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="toggle-row">
+          <button class="toggle-btn ${homeMode==='service'?'active':''}" data-mode="service">See by service</button>
+          <button class="toggle-btn ${homeMode==='locality'?'active':''}" data-mode="locality">See by locality</button>
+          <button class="toggle-btn ${homeMode==='field'?'active':''}" data-mode="field">See by field of interest</button>
+        </div>
+        <div id="feedContainer">${feedHTML(others)}</div>
+      </div>
+      <div>
+        <div class="sidebar-card">
+          <h3>Most requested service<br/>from your field</h3>
+          ${topNeeds.length ? topNeeds.map(([s,c])=>`<div class="stat-row"><span>${esc(s)}</span><span class="count">${c}</span></div>`).join('')
+            : `<p class="muted">No data yet — invite more people to join!</p>`}
+        </div>
+      </div>
+    </div>`;
+
+  body.querySelectorAll('.toggle-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      homeMode = btn.dataset.mode;
+      body.querySelectorAll('.toggle-btn').forEach(b=>b.classList.toggle('active', b.dataset.mode===homeMode));
+      document.getElementById('feedContainer').innerHTML = feedHTML(others);
+      wireFeedButtons();
+    });
+  });
+  wireFeedButtons();
+}
+function feedHTML(others){
+  if(others.length===0) return `<div class="empty-state">No mentors have joined yet in your community. Check back soon, or invite someone!</div>`;
+  let groups = new Map();
+  if(homeMode==='service'){
+    const myNeeds = currentProfile.servicesNeeded||[];
+    const cats = [...SERVICE_CATEGORIES].sort((a,b)=>{
+      const am = myNeeds.includes(a)?0:1, bm = myNeeds.includes(b)?0:1;
+      return am-bm || a.localeCompare(b);
+    });
+    cats.forEach(cat=>{
+      const list = others.filter(p=>(p.servicesOffered||[]).includes(cat));
+      if(list.length) groups.set(cat, list);
+    });
+  } else if(homeMode==='locality'){
+    const byLoc = {};
+    others.forEach(p=>{ const k=p.locality||'Unspecified'; (byLoc[k]=byLoc[k]||[]).push(p); });
+    const keys = Object.keys(byLoc).sort((a,b)=>{
+      const am = a===currentProfile.locality?0:1, bm = b===currentProfile.locality?0:1;
+      return am-bm || a.localeCompare(b);
+    });
+    keys.forEach(k=>groups.set(k, byLoc[k]));
+  } else {
+    const byField = {};
+    others.forEach(p=>{ const k=p.field||'Other'; (byField[k]=byField[k]||[]).push(p); });
+    const keys = Object.keys(byField).sort((a,b)=>{
+      const am = a===currentProfile.field?0:1, bm = b===currentProfile.field?0:1;
+      return am-bm || a.localeCompare(b);
+    });
+    keys.forEach(k=>groups.set(k, byField[k]));
+  }
+  let html = '';
+  for(const [title, list] of groups){
+    html += `<div class="group-block"><div class="group-title">${esc(title)}</div>${list.map(p=>mentorCardHTML(p)).join('')}</div>`;
+  }
+  return html || `<div class="empty-state">Nothing to show yet.</div>`;
+}
+function mentorCardHTML(p){
+  return `
+  <div class="mentor-card" data-pid="${p.id}">
+    ${avatarHTML(p)}
+    <div class="body">
+      <h4><a href="#/profile/${p.id}">${esc(p.name)}</a></h4>
+      <div class="meta">${esc(p.field||'')} · ${esc(p.locality||'')}</div>
+      <div class="bio">${esc((p.bio||'').slice(0,120))}${(p.bio||'').length>120?'…':''}</div>
+      <div class="service-actions">
+        ${(p.servicesOffered||[]).map(s=>`<span class="unit" data-service="${esc(s)}" data-mentor="${p.id}">${esc(s)} <button class="btn btn-small btn-gold req-btn">Request</button></span>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+function wireFeedButtons(){
+  document.querySelectorAll('.req-btn').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      const unit = e.target.closest('.unit');
+      const mentorId = unit.dataset.mentor;
+      const service = unit.dataset.service;
+      btn.disabled = true; btn.textContent='Sending…';
+      const mentorProfile = await sGet('profile:'+mentorId, true);
+      const myConns = await getMyConns();
+      if(findConn(myConns, mentorId, service)){ btn.textContent='Already requested'; return; }
+      await sendConnectionRequest({mentorId, mentorName:mentorProfile.name, menteeId:currentProfile.id,
+        menteeName:currentProfile.name, service, requesterId:currentProfile.id});
+      btn.textContent='Requested ✓';
+    });
+  });
+}
+
+// ================= MENTORS =================
+async function renderMentors(){
+  const body = document.getElementById('pageBody');
+  const myConns = await getMyConns();
+  const all = await getAllProfiles();
+
+  const yourMentors = myConns.filter(c=>!c.iAmMentor && c.status==='accepted');
+  const potentials = all.filter(p=>p.id!==currentProfile.id).map(p=>{
+    const matched = matchedServices(currentProfile.servicesNeeded, p.servicesOffered)
+      .filter(s => !findConn(myConns, p.id, s));
+    return {p, matched};
+  }).filter(x=>x.matched.length>0);
+
+  body.innerHTML = `
+    <div class="page-header"><h1>My Mentors</h1><span class="muted">People guiding you</span></div>
+    <div class="section-block">
+      ${yourMentors.length ? yourMentors.map(c=>connectedCardHTML(c)).join('') :
+        `<div class="empty-state">You haven't connected with a mentor yet. Browse potential mentors below.</div>`}
+    </div>
+    <div class="group-title">Potential mentors for you</div>
+    <div>
+      ${potentials.length ? potentials.map(x=>potentialCardHTML(x.p, x.matched, 'mentor')).join('') :
+        `<div class="empty-state">No one currently offers a service you need. Add more needs to your profile, or check back soon.</div>`}
+    </div>`;
+  wirePotentialButtons('mentor');
+}
+
+// ================= MENTEES =================
+async function renderMentees(){
+  const body = document.getElementById('pageBody');
+  const myConns = await getMyConns();
+  const all = await getAllProfiles();
+
+  const yourMentees = myConns.filter(c=>c.iAmMentor && c.status==='accepted');
+  const potentials = all.filter(p=>p.id!==currentProfile.id).map(p=>{
+    const matched = matchedServices(p.servicesNeeded, currentProfile.servicesOffered)
+      .filter(s => !findConn(myConns, p.id, s));
+    return {p, matched};
+  }).filter(x=>x.matched.length>0);
+
+  body.innerHTML = `
+    <div class="page-header"><h1>My Mentees</h1><span class="muted">People you're guiding</span></div>
+    <div class="section-block">
+      ${yourMentees.length ? yourMentees.map(c=>connectedCardHTML(c)).join('') :
+        `<div class="empty-state">You don't have any mentees yet. Browse people you could help below.</div>`}
+    </div>
+    <div class="group-title">People who could use your help</div>
+    <div>
+      ${potentials.length ? potentials.map(x=>potentialCardHTML(x.p, x.matched, 'mentee')).join('') :
+        `<div class="empty-state">No one currently needs the services you offer. Check back soon.</div>`}
+    </div>`;
+  wirePotentialButtons('mentee');
+}
+function connectedCardHTML(c){
+  return `
+  <div class="mentor-card">
+    <div class="mentor-avatar" style="background:${colorFor(c.otherName)}">${esc(initials(c.otherName))}</div>
+    <div class="body">
+      <h4><a href="#/profile/${c.otherId}">${esc(c.otherName)}</a></h4>
+      <div class="meta"><span class="chip status-accepted">${esc(c.service)}</span></div>
+    </div>
+  </div>`;
+}
+function potentialCardHTML(p, matched, context){
+  return `
+  <div class="mentor-card" data-pid="${p.id}">
+    ${avatarHTML(p)}
+    <div class="body">
+      <h4><a href="#/profile/${p.id}">${esc(p.name)}</a></h4>
+      <div class="meta">${esc(p.field||'')} · ${esc(p.locality||'')}</div>
+      <div class="bio">${esc((p.bio||'').slice(0,120))}${(p.bio||'').length>120?'…':''}</div>
+      <div class="service-actions">
+        ${matched.map(s=>`<span class="unit" data-service="${esc(s)}" data-other="${p.id}">${esc(s)}
+          <button class="btn btn-small ${context==='mentor'?'btn-gold':'btn-primary'} pot-btn" data-context="${context}">
+            ${context==='mentor'?'Request':'Offer to help'}
+          </button></span>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+function wirePotentialButtons(context){
+  document.querySelectorAll('.pot-btn').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      const unit = e.target.closest('.unit');
+      const otherId = unit.dataset.other;
+      const service = unit.dataset.service;
+      btn.disabled = true; btn.textContent='Sending…';
+      const otherProfile = await sGet('profile:'+otherId, true);
+      // A profile can show both relationship types. Read the context from the
+      // individual button, rather than relying on the optional page argument.
+      const actionContext = btn.dataset.context || context;
+      if(actionContext==='mentor'){
+        await sendConnectionRequest({mentorId:otherId, mentorName:otherProfile.name, menteeId:currentProfile.id,
+          menteeName:currentProfile.name, service, requesterId:currentProfile.id});
+      } else {
+        await sendConnectionRequest({mentorId:currentProfile.id, mentorName:currentProfile.name, menteeId:otherId,
+          menteeName:otherProfile.name, service, requesterId:currentProfile.id});
+      }
+      btn.textContent='Sent ✓';
+    });
+  });
+}
+
+// ================= NOTIFICATIONS =================
+async function renderNotifications(){
+  const body = document.getElementById('pageBody');
+  const notifs = await getMyNotifs();
+  const sorted = [...notifs].sort((a,b)=>b.createdAt-a.createdAt);
+  body.innerHTML = `
+    <div class="page-header"><h1>Notifications</h1></div>
+    <div>
+      ${sorted.length ? sorted.map(n=>notifHTML(n)).join('') : `<div class="empty-state">No notifications yet. Nothing to see here for now.</div>`}
+    </div>`;
+  // mark request-type as read once viewed (except still needing response, keep unread styling logic simple: only mark pure-info ones)
+  document.querySelectorAll('.notif-accept').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{ await respondToConnection(btn.dataset.conn, true); renderNotifications(); wireNav(); });
+  });
+  document.querySelectorAll('.notif-decline').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{ await respondToConnection(btn.dataset.conn, false); renderNotifications(); wireNav(); });
+  });
+  const unresolvedNone = sorted.filter(n=>n.type!=='request');
+  if(unresolvedNone.length){
+    const updated = notifs.map(n => n.type!=='request' ? {...n, read:true} : n);
+    await sSet('notif:'+currentProfile.id, updated, true);
+  }
+}
+function notifHTML(n){
+  const needsAction = n.type==='request' && !n.read;
+  return `
+  <div class="notif-item ${n.read?'read':''}">
+    <div class="dot"></div>
+    <div class="content">
+      <div>${esc(n.text)}</div>
+      <div class="time">${timeAgo(n.createdAt)}</div>
+      ${needsAction ? `<div class="notif-actions">
+        <button class="btn btn-primary btn-small notif-accept" data-conn="${n.connId}">Accept</button>
+        <button class="btn btn-ghost btn-small notif-decline" data-conn="${n.connId}">Decline</button>
+      </div>` : ''}
+    </div>
+  </div>`;
+}
+
+// ================= PROFILE =================
+async function renderProfile(paramId){
+  const body = document.getElementById('pageBody');
+  const isMine = !paramId || paramId === currentProfile.id;
+  const profile = isMine ? currentProfile : await sGet('profile:'+paramId, true);
+  if(!profile){ body.innerHTML = `<div class="empty-state">This profile no longer exists.</div>`; return; }
+
+  let contactUnlocked = isMine;
+  let matchedForMe = [];
+  if(!isMine){
+    const myConns = await getMyConns();
+    contactUnlocked = myConns.some(c=>c.otherId===profile.id && c.status==='accepted');
+    matchedForMe = [
+      ...matchedServices(currentProfile.servicesNeeded, profile.servicesOffered).map(s=>({service:s, context:'mentor'})),
+      ...matchedServices(profile.servicesNeeded, currentProfile.servicesOffered).map(s=>({service:s, context:'mentee'}))
+    ].filter(m => !findConn(myConns, profile.id, m.service));
+  }
+
+  body.innerHTML = `
+    <div class="card" id="profileView">
+      <div class="profile-header">
+        ${avatarHTML(profile,'lg')}
+        <div>
+          <h1>${esc(profile.name)}</h1>
+          <div class="muted">${esc(profile.field||'')} · ${esc(profile.locality||'')} · Age ${esc(String(profile.age||''))}</div>
+        </div>
+        ${isMine ? `<button id="editBtn" class="btn btn-secondary" style="margin-left:auto;">Edit profile information</button>` : ''}
+      </div>
+
+      <div class="section-block">
+        <h3>Bio</h3>
+        <p>${esc(profile.bio || 'No bio added yet.')}</p>
+      </div>
+
+      <div class="section-block">
+        <h3>Contact</h3>
+        ${contactUnlocked
+          ? `<p>${esc(profile.email)} · ${esc(profile.phone)}</p>`
+          : `<p class="contact-locked">Contact info is shared once you're matched and the request is accepted.</p>`}
+      </div>
+
+      <div class="section-block">
+        <h3>Offers</h3>
+        ${(profile.servicesOffered||[]).length ? (profile.servicesOffered||[]).map(s=>`<span class="chip tag-teal">${esc(s)}</span>`).join('') : `<span class="muted">Nothing listed.</span>`}
+      </div>
+      <div class="section-block">
+        <h3>Needs</h3>
+        ${(profile.servicesNeeded||[]).length ? (profile.servicesNeeded||[]).map(s=>`<span class="chip tag-rose">${esc(s)}</span>`).join('') : `<span class="muted">Nothing listed.</span>`}
+      </div>
+
+      ${(!isMine && matchedForMe.length) ? `
+      <div class="section-block">
+        <h3>Connect</h3>
+        <div class="service-actions">
+          ${matchedForMe.map(m=>`<span class="unit" data-service="${esc(m.service)}" data-other="${profile.id}">${esc(m.service)}
+            <button class="btn btn-small ${m.context==='mentor'?'btn-gold':'btn-primary'} pot-btn" data-context="${m.context}">
+              ${m.context==='mentor'?'Request':'Offer to help'}
+            </button></span>`).join('')}
+        </div>
+      </div>` : ''}
+    </div>`;
+
+  if(isMine){
+    document.getElementById('editBtn').addEventListener('click', ()=> renderEditForm(profile));
+  } else {
+    wirePotentialButtons();
+  }
+}
+function renderEditForm(profile){
+  const body = document.getElementById('pageBody');
+  const fieldOpts = FIELDS.map(f=>`<option value="${esc(f)}" ${profile.field===f?'selected':''}>${esc(f)}</option>`).join('');
+  const svcCheck = (name, arr)=> SERVICE_CATEGORIES.map(s=>`
+    <label class="check-item"><input type="checkbox" name="${name}" value="${esc(s)}" ${arr.includes(s)?'checked':''}> ${esc(s)}</label>`).join('');
+  body.innerHTML = `
+    <div class="card">
+      <h1 style="font-size:22px;margin-bottom:18px;">Edit profile information</h1>
+      <form id="editForm">
+        <div class="field-row">
+          <div class="field"><label>Full name</label><input required name="name" value="${esc(profile.name)}"/></div>
+          <div class="field"><label>Age</label><input required name="age" type="number" value="${esc(String(profile.age))}"/></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Email</label><input required name="email" type="email" value="${esc(profile.email)}"/></div>
+          <div class="field"><label>Phone number</label><input required name="phone" value="${esc(profile.phone)}"/></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Field of study / expertise</label><select required name="field">${fieldOpts}</select></div>
+          <div class="field"><label>Locality</label><input required name="locality" value="${esc(profile.locality)}"/></div>
+        </div>
+        <div class="field"><label>Bio</label><textarea name="bio">${esc(profile.bio||'')}</textarea></div>
+        <div class="section-title">Services you're willing to provide</div>
+        <div class="checkbox-grid">${svcCheck('offered', profile.servicesOffered||[])}</div>
+        <div class="section-title">Services you're in need of</div>
+        <div class="checkbox-grid">${svcCheck('needed', profile.servicesNeeded||[])}</div>
+        <div id="editError" class="error-msg" style="display:none;"></div>
+        <div style="margin-top:22px;display:flex;gap:10px;">
+          <button type="submit" class="btn btn-primary">Save</button>
+          <button type="button" id="cancelEdit" class="btn btn-ghost">Cancel</button>
+        </div>
+      </form>
+    </div>`;
+  document.getElementById('cancelEdit').addEventListener('click', ()=>renderProfile());
+  document.getElementById('editForm').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const offered = fd.getAll('offered'); const needed = fd.getAll('needed');
+    if(offered.length===0 && needed.length===0){
+      const err = document.getElementById('editError');
+      err.textContent = 'Please keep at least one service offered or needed.'; err.style.display='block'; return;
+    }
+    const updated = {...profile, name:fd.get('name').trim(), age:fd.get('age'), email:fd.get('email').trim(),
+      phone:fd.get('phone').trim(), field:fd.get('field'), locality:fd.get('locality').trim(),
+      bio:(fd.get('bio')||'').trim(), servicesOffered:offered, servicesNeeded:needed};
+    await sSet('profile:'+profile.id, updated, true);
+    currentProfile = updated;
+    renderProfile();
+  });
+}
+
+})();
+</script>
+
+</body>
+</html>
