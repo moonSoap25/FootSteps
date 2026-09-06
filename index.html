@@ -6,10 +6,13 @@
      userCodeAppPanel page and loses the in-memory signed-in profile. -->
 <base target="_self">
 <meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jomhuria&family=Valley+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
 </head>
 <body>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Jomhuria&family=Libre+Franklin:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700&display=swap');
 
 :root{
   --ink:#23201B;
@@ -26,8 +29,8 @@
   --radius-pill: 999px;
 }
 *{box-sizing:border-box;}
-#app, #app *{font-family:'Libre Franklin',sans-serif;color:var(--ink);}
-#app h1, #app h2, #app h3, #app .brand{font-family:'Fraunces',serif;}
+#app{font-family:'Libre Franklin',sans-serif;color:var(--ink);}
+#app h1, #app h2, #app h3{font-family:'Valley Sans',sans-serif;}
 #app{background:var(--paper);min-height:600px;padding-bottom:60px;}
 #app a{text-decoration:none;}
 #app button{cursor:pointer;font-family:inherit;}
@@ -48,7 +51,8 @@
 .btn-primary:hover{background:var(--teal-dark);}
 .btn-secondary{background:transparent;color:var(--teal);border:1.5px solid var(--teal);}
 .btn-secondary:hover{background:var(--sand);}
-.btn-gold{background:var(--gold);color:var(--white);}
+.btn-gold{background:#FFE4AE;color:#7A4E14;}
+.btn-gold:hover{background:#FFD98C;}
 .btn-small{padding:6px 14px;font-size:12.5px;}
 .btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line);}
 .btn:disabled{opacity:.55;cursor:default;}
@@ -65,11 +69,17 @@
 
 /* ---------- Signup ---------- */
 .auth-shell{max-width:640px;margin:0 auto;padding:56px 24px 40px;}
-.auth-shell .brand-mark{font-size:15px;letter-spacing:.02em;color:var(--teal-dark);font-weight:600;margin-bottom:6px;}
+.auth-shell .brand-mark{font-size:24px;letter-spacing:.02em;color:var(--teal-dark);font-family:'Jomhuria',sans-serif;font-weight:600;margin-bottom:6px;}
 .auth-shell h1{font-size:34px;font-weight:600;margin:0 0 8px;color:var(--teal-dark);}
 .auth-shell p.lede{font-size:15.5px;color:#5b5548;margin:0 0 28px;line-height:1.55;}
 .checkbox-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 @media(max-width:640px){.checkbox-grid{grid-template-columns:1fr;}}
+.community-input-row{display:flex;gap:8px;}
+.community-input-row input{flex:1;}
+.community-chips{margin-top:10px;}
+.community-chips .chip{display:inline-flex;align-items:center;gap:6px;}
+.community-chips .chip-remove{background:none;border:none;font-size:15px;line-height:1;color:inherit;padding:0;opacity:.6;}
+.community-chips .chip-remove:hover{opacity:1;}
 .check-item{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:var(--white);font-size:13.5px;}
 .check-item input{width:auto;padding:0;accent-color:var(--teal);}
 .section-title{font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gold);margin:26px 0 10px;}
@@ -81,10 +91,8 @@
 /* ---------- Nav ---------- */
 .nav{background:var(--teal);position:sticky;top:0;z-index:30;}
 .nav-inner{max-width:1180px;margin:0 auto;display:flex;align-items:center;gap:22px;padding:13px 24px;}
-.brand{color:var(--white);font-size:19px;font-weight:600;white-space:nowrap;}
+.brand{color:var(--white);font-family:'Jomhuria',sans-serif;font-size:28px;font-weight:600;white-space:nowrap;letter-spacing:.02em;}
 .brand span{color:var(--gold);}
-#app .brand, #app .brand-mark{font-family:'Jomhuria',cursive;font-weight:400;}
-#app .brand{font-size:42px;line-height:.8;}
 .nav-search{position:relative;flex:1;max-width:360px;}
 .nav-search input{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);color:var(--white);}
 .nav-search input::placeholder{color:rgba(255,255,255,.65);}
@@ -140,7 +148,7 @@
 .mentor-card .bio{font-size:13px;color:#5b5548;line-height:1.5;margin-bottom:10px;}
 .service-actions{display:flex;flex-wrap:wrap;gap:8px;}
 .service-actions .unit{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:var(--radius-pill);
-  padding:4px 6px 4px 12px;font-size:12px;background:var(--sand);}
+  padding:4px 6px 4px 12px;font-size:12px;background:#FEF5E3;}
 
 .sidebar-card{background:var(--white);border:1px solid var(--line);border-radius:var(--radius-card);padding:18px;margin-bottom:16px;}
 .sidebar-card h3{font-size:14px;margin:0 0 12px;}
@@ -381,6 +389,47 @@ function serviceChecks(name){
     <label class="check-item"><input type="checkbox" name="${name}" value="${esc(s)}"> ${esc(s)}</label>
   `).join('');
 }
+function communityFieldHTML(){
+  return `
+  <div class="field">
+    <label>Communities you're part of</label>
+    <div class="community-input-row">
+      <input type="text" id="communityInput" placeholder="e.g. Bergen Masjid, Lincoln High School" />
+      <button type="button" id="addCommunityBtn" class="btn btn-secondary btn-small">Add</button>
+    </div>
+    <div class="community-chips" id="communityChips"></div>
+    <input type="hidden" name="communities" id="communitiesHidden" value="[]">
+  </div>`;
+}
+// Shared by the signup form and the edit-profile form. Keeps a plain JS array
+// in memory as chips are added/removed, and mirrors it into a hidden input
+// so it rides along with the rest of the form on submit.
+function wireCommunityInput(initial){
+  let communities = initial ? [...initial] : [];
+  const chipsEl = document.getElementById('communityChips');
+  const hiddenEl = document.getElementById('communitiesHidden');
+  function renderChips(){
+    hiddenEl.value = JSON.stringify(communities);
+    chipsEl.innerHTML = communities.map((c,i)=>
+      `<span class="chip tag-teal">${esc(c)} <button type="button" class="chip-remove" data-i="${i}">&times;</button></span>`
+    ).join('');
+    chipsEl.querySelectorAll('.chip-remove').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ communities.splice(+btn.dataset.i, 1); renderChips(); });
+    });
+  }
+  function addFromInput(){
+    const input = document.getElementById('communityInput');
+    const val = input.value.trim();
+    if(val && !communities.some(c=>c.toLowerCase()===val.toLowerCase())){
+      communities.push(val); input.value=''; renderChips();
+    }
+  }
+  document.getElementById('addCommunityBtn').addEventListener('click', addFromInput);
+  document.getElementById('communityInput').addEventListener('keydown', (e)=>{
+    if(e.key==='Enter'){ e.preventDefault(); addFromInput(); }
+  });
+  renderChips();
+}
 function signupHTML(){
   const fieldOpts = FIELDS.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('');
   return `
@@ -403,8 +452,10 @@ function signupHTML(){
       </div>
       <div class="field">
         <label>Bio</label>
-        <textarea name="bio" placeholder="What should the community know? Your experience, what you care about, what you can specifically provide to others, and what you're seeking for yourself…"></textarea>
+        <textarea name="bio" placeholder="What should the community know? Your school, job, experience, what you care about…"></textarea>
       </div>
+
+      ${communityFieldHTML()}
 
       <div class="section-title">Services you're willing to provide</div>
       <div class="checkbox-grid">${serviceChecks('offered')}</div>
@@ -422,11 +473,14 @@ function signupHTML(){
 }
 function wireSignup(){
   const form = document.getElementById('signupForm');
+  wireCommunityInput([]);
   form.addEventListener('submit', async (e)=>{
     e.preventDefault();
     const fd = new FormData(form);
     const offered = fd.getAll('offered');
     const needed = fd.getAll('needed');
+    let communities = [];
+    try{ communities = JSON.parse(fd.get('communities') || '[]'); }catch(e){ communities = []; }
     const errEl = document.getElementById('signupError');
     if(offered.length===0 && needed.length===0){
       errEl.textContent = 'Please select at least one service you can offer or one you need.';
@@ -437,7 +491,7 @@ function wireSignup(){
     const profile = {
       id, name: fd.get('name').trim(), age: fd.get('age'), email: fd.get('email').trim(),
       phone: fd.get('phone').trim(), field: fd.get('field'), locality: fd.get('locality').trim(),
-      bio: (fd.get('bio')||'').trim(), servicesOffered: offered, servicesNeeded: needed, createdAt: Date.now()
+      bio: (fd.get('bio')||'').trim(), communities, servicesOffered: offered, servicesNeeded: needed, createdAt: Date.now()
     };
     await sSet('profile:'+id, profile, true);
     await sSet('my-profile-id', id, false);
@@ -498,10 +552,19 @@ async function wireNav(){
       (p.field||'').toLowerCase().includes(q) ||
       (p.locality||'').toLowerCase().includes(q) ||
       (p.servicesOffered||[]).some(s=>s.toLowerCase().includes(q)) ||
-      (p.servicesNeeded||[]).some(s=>s.toLowerCase().includes(q))
+      (p.servicesNeeded||[]).some(s=>s.toLowerCase().includes(q)) ||
+      (p.communities||[]).some(c=>c.toLowerCase().includes(q))
     )).slice(0,8);
     if(matches.length===0){ results.innerHTML = `<a style="color:#8a8370;">No matches found.</a>`; }
-    else{ results.innerHTML = matches.map(p=>`<a href="#/profile/${p.id}">${esc(p.name)} — <span style="color:#8a8370;">${esc(p.field||'')}</span></a>`).join(''); }
+    else{
+      results.innerHTML = matches.map(p=>{
+        // Prefer showing the community that actually matched, so a search like
+        // "Bergen Masjid" surfaces *why* someone showed up, not just their field.
+        const matchedCommunity = (p.communities||[]).find(c=>c.toLowerCase().includes(q));
+        const subtitle = matchedCommunity || p.field || '';
+        return `<a href="#/profile/${p.id}">${esc(p.name)} — <span style="color:#8a8370;">${esc(subtitle)}</span></a>`;
+      }).join('');
+    }
     results.style.display='block';
   });
   document.addEventListener('click', (e)=>{
@@ -603,12 +666,13 @@ function feedHTML(others){
   return html || `<div class="empty-state">Nothing to show yet.</div>`;
 }
 function mentorCardHTML(p){
+  const communityLine = (p.communities||[]).length ? ` · ${p.communities.map(c=>esc(c)).join(', ')}` : '';
   return `
   <div class="mentor-card" data-pid="${p.id}">
     ${avatarHTML(p)}
     <div class="body">
       <h4><a href="#/profile/${p.id}">${esc(p.name)}</a></h4>
-      <div class="meta">${esc(p.field||'')} · ${esc(p.locality||'')}</div>
+      <div class="meta">${esc(p.field||'')} · ${esc(p.locality||'')}${communityLine}</div>
       <div class="bio">${esc((p.bio||'').slice(0,120))}${(p.bio||'').length>120?'…':''}</div>
       <div class="service-actions">
         ${(p.servicesOffered||[]).map(s=>`<span class="unit" data-service="${esc(s)}" data-mentor="${p.id}">${esc(s)} <button class="btn btn-small btn-gold req-btn">Request</button></span>`).join('')}
@@ -697,12 +761,13 @@ function connectedCardHTML(c){
   </div>`;
 }
 function potentialCardHTML(p, matched, context){
+  const communityLine = (p.communities||[]).length ? ` · ${p.communities.map(c=>esc(c)).join(', ')}` : '';
   return `
   <div class="mentor-card" data-pid="${p.id}">
     ${avatarHTML(p)}
     <div class="body">
       <h4><a href="#/profile/${p.id}">${esc(p.name)}</a></h4>
-      <div class="meta">${esc(p.field||'')} · ${esc(p.locality||'')}</div>
+      <div class="meta">${esc(p.field||'')} · ${esc(p.locality||'')}${communityLine}</div>
       <div class="bio">${esc((p.bio||'').slice(0,120))}${(p.bio||'').length>120?'…':''}</div>
       <div class="service-actions">
         ${matched.map(s=>`<span class="unit" data-service="${esc(s)}" data-other="${p.id}">${esc(s)}
@@ -824,6 +889,10 @@ async function renderProfile(paramId){
         <h3>Needs</h3>
         ${(profile.servicesNeeded||[]).length ? (profile.servicesNeeded||[]).map(s=>`<span class="chip tag-rose">${esc(s)}</span>`).join('') : `<span class="muted">Nothing listed.</span>`}
       </div>
+      <div class="section-block">
+        <h3>Communities</h3>
+        ${(profile.communities||[]).length ? (profile.communities||[]).map(c=>`<span class="chip tag-teal">${esc(c)}</span>`).join('') : `<span class="muted">Nothing listed.</span>`}
+      </div>
 
       ${(!isMine && matchedForMe.length) ? `
       <div class="section-block">
@@ -865,6 +934,7 @@ function renderEditForm(profile){
           <div class="field"><label>Locality</label><input required name="locality" value="${esc(profile.locality)}"/></div>
         </div>
         <div class="field"><label>Bio</label><textarea name="bio">${esc(profile.bio||'')}</textarea></div>
+        ${communityFieldHTML()}
         <div class="section-title">Services you're willing to provide</div>
         <div class="checkbox-grid">${svcCheck('offered', profile.servicesOffered||[])}</div>
         <div class="section-title">Services you're in need of</div>
@@ -877,17 +947,20 @@ function renderEditForm(profile){
       </form>
     </div>`;
   document.getElementById('cancelEdit').addEventListener('click', ()=>renderProfile());
+  wireCommunityInput(profile.communities||[]);
   document.getElementById('editForm').addEventListener('submit', async (e)=>{
     e.preventDefault();
     const fd = new FormData(e.target);
     const offered = fd.getAll('offered'); const needed = fd.getAll('needed');
+    let communities = [];
+    try{ communities = JSON.parse(fd.get('communities') || '[]'); }catch(e){ communities = []; }
     if(offered.length===0 && needed.length===0){
       const err = document.getElementById('editError');
       err.textContent = 'Please keep at least one service offered or needed.'; err.style.display='block'; return;
     }
     const updated = {...profile, name:fd.get('name').trim(), age:fd.get('age'), email:fd.get('email').trim(),
       phone:fd.get('phone').trim(), field:fd.get('field'), locality:fd.get('locality').trim(),
-      bio:(fd.get('bio')||'').trim(), servicesOffered:offered, servicesNeeded:needed};
+      bio:(fd.get('bio')||'').trim(), communities, servicesOffered:offered, servicesNeeded:needed};
     await sSet('profile:'+profile.id, updated, true);
     currentProfile = updated;
     renderProfile();
